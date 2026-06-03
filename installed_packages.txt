@@ -1,0 +1,14 @@
+pip install flask
+pip install flask-mysqldb
+pip install passlib
+pip install Flask-OAuthlib
+pip install authlib
+pip install Flask-WTF
+pip install WTForms
+pip install qrcode
+pip install pyotp
+
+pip install google_auth_oauthlib
+pip freeze > requirements.txt
+pip freeze
+pip install -r requirements.txt

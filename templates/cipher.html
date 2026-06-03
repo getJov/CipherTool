@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cipher Tool | CipherTool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='ctL.ico') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://kit.fontawesome.com/64d58efce2.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <main class="cipher-container">
+        <header class="page-header">
+            <div class="brand-lockup">
+                <img src="{{ url_for('static', filename='ctL.png') }}" alt="CipherTool logo">
+                <div class="brand-text">
+                    <span class="eyebrow">Cipher workspace</span>
+                    <h1>Encrypt or decrypt a message</h1>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <div class="account-summary">
+                    <strong>{{ session.get('username') or session.get('name') or 'Client' }}</strong>
+                    <span>{{ session.get('email', '') }}</span>
+                </div>
+                <a href="{{ url_for('myQR') }}" class="icon-link" title="Open QR Generator" aria-label="Open QR Generator">
+                    <i class="fa fa-qrcode" aria-hidden="true"></i>
+                </a>
+                <a href="{{ url_for('logout') }}" class="icon-link" title="Logout" aria-label="Logout">
+                    <i class="fa fa-sign-out" aria-hidden="true"></i>
+                </a>
+            </div>
+        </header>
+
+        <section class="workspace">
+            <div class="tool-panel">
+                <div class="panel-title">
+                    <h2>Message tool</h2>
+                    <p class="helper-text">Choose a cipher, select encrypt or decrypt, then process your message.</p>
+                </div>
+
+                {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                <div class="alert alert-warning">
+                    {{ messages[0] }}
+                </div>
+                {% endif %}
+                {% endwith %}
+
+                <form class="cipher-form" method="POST" action="{{ url_for('cipher') }}">
+                    <div class="form-group">
+                        <span class="field-label">Mode</span>
+                        <div class="mode-selector">
+                            <label class="mode-option">
+                                <input type="radio" name="encrypt_or_decrypt" value="e" required {% if mode != 'd' %}checked{% endif %}>
+                                <span>Encrypt</span>
+                            </label>
+                            <label class="mode-option">
+                                <input type="radio" name="encrypt_or_decrypt" value="d" required {% if mode == 'd' %}checked{% endif %}>
+                                <span>Decrypt</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cipher">Cipher type</label>
+                        <div class="field-shell simple">
+                            <select name="cipher" id="cipher" class="field-control">
+                                <option value="atbash" {% if selected_cipher == 'atbash' %}selected{% endif %}>Atbash Cipher</option>
+                                <option value="caesar" {% if selected_cipher == 'caesar' %}selected{% endif %}>Caesar Cipher</option>
+                                <option value="vigenere" {% if selected_cipher == 'vigenere' %}selected{% endif %}>Vigenere Cipher</option>
+                            </select>
+                        </div>
+                        <p class="form-help">Atbash needs no key. Caesar uses a number. Vigenere uses a keyword.</p>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="message">Message</label>
+                        <div class="field-shell simple">
+                            <textarea name="message" rows="6" placeholder="Type the message you want to encrypt or decrypt" id="message" class="field-control" required>{{ message or '' }}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="key-div">
+                        <label for="key">Caesar key</label>
+                        <div class="field-shell simple">
+                            <input type="number" name="key" id="key" class="field-control" placeholder="Example: 3" value="{{ key or '' }}">
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="keyword-div">
+                        <label for="keyword">Vigenere keyword</label>
+                        <div class="field-shell simple">
+                            <input type="text" name="keyword" id="keyword" class="field-control" placeholder="Example: cipher" value="{{ keyword or '' }}">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn solid" id="cipher-submit">
+                        {% if mode == 'd' %}Decrypt message{% else %}Encrypt message{% endif %}
+                    </button>
+                </form>
+            </div>
+
+            <aside class="result-panel" aria-live="polite">
+                <div class="panel-title">
+                    <span class="eyebrow">Output</span>
+                    <h2>Result</h2>
+                    <p class="helper-text">Copy the output or create a QR code from the latest result.</p>
+                </div>
+
+                {% if result %}
+                <div class="result-box" id="resultText">{{ result }}</div>
+                <div class="result-actions">
+                    <button id="copyButton" type="button" class="secondary-action">
+                        <i class="far fa-copy" aria-hidden="true"></i>
+                        <span id="copy">Copy result</span>
+                    </button>
+                    <a href="{{ url_for('myQR', message=result) }}" class="btn solid">
+                        <i class="fa fa-qrcode" aria-hidden="true"></i>
+                        Create QR
+                    </a>
+                </div>
+                {% else %}
+                <div class="empty-result">
+                    Your processed message will appear here. Generate a result first, then you can copy it or turn it into a QR code.
+                </div>
+                <a href="{{ url_for('myQR') }}" class="secondary-action">
+                    <i class="fa fa-qrcode" aria-hidden="true"></i>
+                    Open QR Generator
+                </a>
+                {% endif %}
+            </aside>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script>
+        const copyButton = document.getElementById('copyButton');
+        const copySpan = document.getElementById('copy');
+        const resultText = document.getElementById('resultText');
+
+        if (copyButton && copySpan && resultText) {
+            copyButton.addEventListener('click', async () => {
+                const text = resultText.innerText;
+
+                if (navigator.clipboard) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    const tempInput = document.createElement('textarea');
+                    tempInput.value = text;
+                    document.body.appendChild(tempInput);
+                    tempInput.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(tempInput);
+                }
+
+                copySpan.innerHTML = 'Copied';
+                setTimeout(() => {
+                    copySpan.innerHTML = 'Copy result';
+                }, 1200);
+            });
+        }
+    </script>
+</body>
+
+</html>

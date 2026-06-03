@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Generator | CipherTool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='ctL.ico') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://kit.fontawesome.com/64d58efce2.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <main class="qr-container">
+        <header class="page-header">
+            <div class="brand-lockup">
+                <a href="{{ url_for('cipher') }}" aria-label="Back to Cipher Tool">
+                    <img src="{{ url_for('static', filename='ctL.png') }}" alt="CipherTool logo">
+                </a>
+                <div class="brand-text">
+                    <span class="eyebrow">QR sharing</span>
+                    <h1>Create QR code</h1>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <a href="{{ url_for('cipher') }}" class="secondary-action">
+                    <i class="fa fa-arrow-left" aria-hidden="true"></i>
+                    Back to Cipher
+                </a>
+            </div>
+        </header>
+
+        <section class="qr-layout">
+            <div class="tool-panel">
+                <div class="panel-title">
+                    <h2>QR content</h2>
+                    <p class="helper-text">Include the encrypted message first. Add contact details only if the QR should carry extra context.</p>
+                </div>
+
+                <form action="{{ url_for('makeQR') }}" method="post" class="login-in-form">
+                    <div class="form-group full-width">
+                        <label for="encrypted-message">Encrypted message</label>
+                        <div class="field-shell simple">
+                            <textarea name="encrypted_message" rows="6" placeholder="Paste or generate an encrypted message" id="encrypted-message" class="field-control">{{ prefill_message or '' }}</textarea>
+                        </div>
+                        {% if prefill_message %}
+                        <p class="form-help">Prefilled from your latest cipher result.</p>
+                        {% else %}
+                        <p class="form-help">Open this page from a cipher result to prefill this field automatically.</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="optional-section">
+                        <div>
+                            <h3>Optional contact details</h3>
+                            <p class="form-help">These fields are secondary and can be left blank.</p>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="fullname">Full name</label>
+                                <div class="field-shell simple">
+                                    <input type="text" name="fullname" placeholder="Full Name" id="fullname" class="field-control">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="organization">Organization</label>
+                                <div class="field-shell simple">
+                                    <input type="text" name="organization" placeholder="Organization" id="organization" class="field-control">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email">Email</label>
+                                <div class="field-shell simple">
+                                    <input type="email" name="email" placeholder="Email" id="email" class="field-control">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="phone">Phone</label>
+                                <div class="field-shell simple">
+                                    <input type="number" name="phone" placeholder="Phone" id="phone" class="field-control">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="address">Address</label>
+                                <div class="field-shell simple">
+                                    <textarea name="Address" rows="4" placeholder="Address" id="address" class="field-control"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="notes">Notes</label>
+                                <div class="field-shell simple">
+                                    <textarea name="notes" rows="4" placeholder="Notes" id="notes" class="field-control"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn solid" id="qrButton">
+                        <i class="fa fa-qrcode" aria-hidden="true"></i>
+                        Generate QR
+                    </button>
+                </form>
+            </div>
+
+            <aside class="qr-preview-panel">
+                <div class="panel-title">
+                    <span class="eyebrow">Preview</span>
+                    <h2>Your QR code</h2>
+                    {% if qr_generated %}
+                    <p class="helper-text">QR generated from the content you submitted.</p>
+                    {% else %}
+                    <p class="helper-text">Generate a QR code to refresh this preview.</p>
+                    {% endif %}
+                </div>
+
+                <img src="{{ url_for('static', filename='myQR.png') }}" alt="Generated QR code preview" class="qr-image" id="qr-img">
+                <button class="btn solid" id="download-btn" type="button">
+                    <i class="fa fa-download" aria-hidden="true"></i>
+                    Download QR
+                </button>
+            </aside>
+        </section>
+    </main>
+
+    <script>
+        const downloadButton = document.getElementById("download-btn");
+        const qrImage = document.getElementById("qr-img");
+
+        if (downloadButton && qrImage) {
+            downloadButton.addEventListener("click", function () {
+                const link = document.createElement("a");
+                link.href = qrImage.src;
+                link.download = "myQR.png";
+                link.click();
+            });
+        }
+    </script>
+</body>
+
+</html>

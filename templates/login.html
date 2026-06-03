@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Log In | CipherTool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='ctL.ico') }}">
+    <script src="https://kit.fontawesome.com/64d58efce2.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+</head>
+
+<body class="auth-page">
+    <main class="login-container">
+        <header class="page-header">
+            <div class="brand-lockup">
+                <img src="{{ url_for('static', filename='ctL.png') }}" alt="CipherTool logo">
+                <div class="brand-text">
+                    <span class="eyebrow">CipherTool</span>
+                    <h1>Log in</h1>
+                </div>
+            </div>
+        </header>
+
+        <section class="panel-body">
+            <div class="intro">
+                <h2>Protect a message, then share it as a QR code.</h2>
+                <p>Sign in to encrypt or decrypt a message with classic ciphers, then generate a QR code when you are ready to share.</p>
+            </div>
+
+            <div class="workflow-list" aria-label="CipherTool workflow">
+                <div class="workflow-step">
+                    <strong>1. Verify</strong>
+                    <span>Log in and confirm access.</span>
+                </div>
+                <div class="workflow-step">
+                    <strong>2. Encrypt</strong>
+                    <span>Choose a cipher and process text.</span>
+                </div>
+                <div class="workflow-step">
+                    <strong>3. Share</strong>
+                    <span>Create a QR code from the result.</span>
+                </div>
+            </div>
+
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div class="alert alert-warning">
+                {{ messages[0] }}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <form class="sign-in-form" method="POST" action="{{ url_for('local_login') }}">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <div class="input-field">
+                        <i class="fas fa-user" aria-hidden="true"></i>
+                        <input type="text" name="username" id="username" class="form-control" placeholder="Enter your username" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-field">
+                        <i class="fas fa-lock" aria-hidden="true"></i>
+                        <input type="password" name="password" class="form-control" placeholder="Enter your password" id="password" required>
+                        <i class="fas fa-eye" id="password-toggle" aria-hidden="true"></i>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn solid">Log in</button>
+            </form>
+
+            <div class="social-auth">
+                <span class="muted">Or continue with</span>
+                <a href="{{ url_for('login') }}" class="social-icon">
+                    <i class="fab fa-google" aria-hidden="true"></i>
+                    <span>Google Account</span>
+                </a>
+            </div>
+
+            <p class="auth-footer">Don't have an account? <a href="{{ url_for('register') }}">Register</a></p>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='password.js') }}"></script>
+</body>
+
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Account | CipherTool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='ctL.ico') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://kit.fontawesome.com/64d58efce2.js" crossorigin="anonymous"></script>
+</head>
+
+<body class="auth-page">
+    <main class="cipher-container verify-container">
+        <header class="page-header">
+            <div class="brand-lockup">
+                <img src="{{ url_for('static', filename='ctL.png') }}" alt="CipherTool logo">
+                <div class="brand-text">
+                    <span class="eyebrow">Step 2 of 3</span>
+                    <h1>Verify account</h1>
+                </div>
+            </div>
+            <div class="account-summary">
+                <strong>{{ session.get('username') or session.get('name') or 'Client' }}</strong>
+                <span>{{ session.get('email', '') }}</span>
+            </div>
+        </header>
+
+        <section class="panel-body">
+            <div class="intro">
+                <h2>Confirm access before opening the cipher tool.</h2>
+                <p>Scan the QR code with Google Authenticator, then enter the current code to continue.</p>
+            </div>
+
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div class="alert alert-warning">
+                {{ messages[0] }}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <form action="/googleAuth/" method="post" class="sign-in-form">
+                <img src="../static/qrcode.png" alt="Authenticator QR code" class="verify-qr">
+
+                {% if error_message %}
+                <p class="error-text">{{ error_message }}</p>
+                {% endif %}
+
+                <div class="form-group">
+                    <label for="gauth-code">Authenticator code</label>
+                    <div class="input-field">
+                        <i class="fas fa-asterisk" id="asterisk" aria-hidden="true"></i>
+                        <input type="text" name="gauth_code" id="gauth-code" class="form-control" placeholder="Enter 6-digit code" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn solid">Verify and continue</button>
+            </form>
+        </section>
+    </main>
+</body>
+
+</html>
