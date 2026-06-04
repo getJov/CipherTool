@@ -1,14 +1,15 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, abort
-from flask_mysqldb import MySQL
 from passlib.hash import sha256_crypt
 from functools import wraps
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 from cachecontrol import CacheControl
 from dotenv import load_dotenv
+from psycopg.rows import dict_row
 
 import re 
 import os
+import psycopg
 import requests
 import google.auth.transport.requests
 
@@ -30,13 +31,15 @@ app = Flask(__name__)
 app.secret_key = get_required_env("SECRET_KEY")
 
 # Database
-app.config['MYSQL_HOST'] = os.getenv('MYSQL_HOST', 'localhost')
-app.config['MYSQL_USER'] = get_required_env('MYSQL_USER')
-app.config['MYSQL_PASSWORD'] = get_required_env('MYSQL_PASSWORD')
-app.config['MYSQL_DB'] = os.getenv('MYSQL_DB', 'web_app_db')
-app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
+DATABASE_URL = get_required_env("DATABASE_URL")
+DATABASE_SSLMODE = os.getenv("DATABASE_SSLMODE")
 
-mysql = MySQL(app)
+
+def get_db_connection():
+    connection_args = {"row_factory": dict_row}
+    if DATABASE_SSLMODE:
+        connection_args["sslmode"] = DATABASE_SSLMODE
+    return psycopg.connect(DATABASE_URL, **connection_args)
 
 # to allow Http traffic for local dev
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1" 
@@ -186,46 +189,43 @@ def callback():
 @app.route('/local_login', methods=['GET', 'POST'])
 def local_login():
     if request.method == 'POST':
-            username = request.form['username']
-            password = request.form['password']
+        username = request.form['username']
+        password = request.form['password']
 
-            # get the user from the database by username
-            cursor = mysql.connection.cursor()
-            cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
-            user = cursor.fetchone()
+        # get the user from the database by username
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
+                user = cursor.fetchone()
 
-            if user:
-                stored_hashed_password = user['password']
-                login_attempts = user['login_attempts']
-                is_blocked = user['blocked'] 
+                if user:
+                    stored_hashed_password = user['password']
+                    login_attempts = user['login_attempts']
+                    is_blocked = user['blocked'] 
 
-                if is_blocked:
-                    flash('Your account is blocked. Please contact support.', 'danger')
-                    
-                elif sha256_crypt.verify(password, stored_hashed_password):
-                    # Password is correct, allow login
-                    session['logged_in'] = True
-                    session['username'] = username 
-                    return redirect(url_for('gAuth'))
-                else:
-                    # Password is incorrect
-                    login_attempts += 1
-
-                    if login_attempts >= 3:
-                        # Block the user if they exceed three wrong login attempts
-                        cursor.execute("UPDATE users SET login_attempts = %s, blocked = %s WHERE username = %s", (login_attempts, True, username))
-                        mysql.connection.commit()
-                        cursor.close()
-                        flash('Your account has been blocked due to multiple incorrect login attempts.', 'danger')
+                    if is_blocked:
+                        flash('Your account is blocked. Please contact support.', 'danger')
+                        
+                    elif sha256_crypt.verify(password, stored_hashed_password):
+                        # Password is correct, allow login
+                        session['logged_in'] = True
+                        session['username'] = username 
+                        return redirect(url_for('gAuth'))
                     else:
-                        # Update login attempts if less than three
-                        cursor.execute("UPDATE users SET login_attempts = %s WHERE username = %s", (login_attempts, username))
-                        mysql.connection.commit()
-                        cursor.close()
-                        flash(f'Incorrect password. You have {3 - login_attempts} attempts remaining.', 'danger')
+                        # Password is incorrect
+                        login_attempts += 1
 
-            else:
-                flash('Username not found.', 'danger')
+                        if login_attempts >= 3:
+                            # Block the user if they exceed three wrong login attempts
+                            cursor.execute("UPDATE users SET login_attempts = %s, blocked = %s WHERE username = %s", (login_attempts, True, username))
+                            flash('Your account has been blocked due to multiple incorrect login attempts.', 'danger')
+                        else:
+                            # Update login attempts if less than three
+                            cursor.execute("UPDATE users SET login_attempts = %s WHERE username = %s", (login_attempts, username))
+                            flash(f'Incorrect password. You have {3 - login_attempts} attempts remaining.', 'danger')
+
+                else:
+                    flash('Username not found.', 'danger')
     return render_template('login.html')
 
 # Register
@@ -253,22 +253,23 @@ def register():
         # Hash the password
         hashed_password = sha256_crypt.hash(password)
 
-        # Cursor for MySQL
-        cur = mysql.connection.cursor()
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                # Check if the username is already taken
+                cur.execute("SELECT * FROM users WHERE username = %s", (username,))
+                user = cur.fetchone()
 
-        # Check if the username is already taken
-        result = cur.execute("SELECT * FROM users WHERE username = %s", [username])
+                if user:
+                    flash('Username is already taken', 'danger')
+                else:
+                    # Insert the new user into the database
+                    cur.execute(
+                        "INSERT INTO users (username, password, login_attempts) VALUES (%s, %s, %s)",
+                        (username, hashed_password, 0)
+                    )
 
-        if result > 0:
-            flash('Username is already taken', 'danger')
-        else:
-            # Insert the new user into the database
-            cur.execute("INSERT INTO users (username, password, login_attempts) VALUES (%s, %s, %s)", (username, hashed_password, 0))
-            mysql.connection.commit()
-            cur.close()
-
-            flash('You are now registered and can log in', 'success')
-            return redirect(url_for('local_login'))
+                    flash('You are now registered and can log in', 'success')
+                    return redirect(url_for('local_login'))
         
     return render_template('register.html')
 
