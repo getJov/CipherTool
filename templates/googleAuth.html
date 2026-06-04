@@ -30,7 +30,7 @@
         <section class="panel-body">
             <div class="intro">
                 <h2>Confirm access before opening the cipher tool.</h2>
-                <p>Scan the QR code with Google Authenticator, then enter the current code to continue.</p>
+                <p>Scan the QR code with Google Authenticator, or enter the setup key manually on the same device.</p>
             </div>
 
             {% with messages = get_flashed_messages() %}
@@ -42,7 +42,18 @@
             {% endwith %}
 
             <form action="/googleAuth/" method="post" class="sign-in-form">
-                <img src="../static/qrcode.png" alt="Authenticator QR code" class="verify-qr">
+                <img src="{{ qr_data_uri }}" alt="Authenticator QR code" class="verify-qr">
+
+                <div class="manual-key-panel">
+                    <label for="manual-setup-key">Manual setup key</label>
+                    <div class="manual-key-row">
+                        <input type="text" id="manual-setup-key" value="{{ totp_secret }}" readonly autocomplete="off">
+                        <button type="button" class="icon-btn copy-key-btn" data-copy-target="manual-setup-key" aria-label="Copy setup key">
+                            <i class="fas fa-copy" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <p class="helper-text">Use this key in Google Authenticator when the QR code is on the same phone.</p>
+                </div>
 
                 {% if error_message %}
                 <p class="error-text">{{ error_message }}</p>
@@ -52,7 +63,7 @@
                     <label for="gauth-code">Authenticator code</label>
                     <div class="input-field">
                         <i class="fas fa-asterisk" id="asterisk" aria-hidden="true"></i>
-                        <input type="text" name="gauth_code" id="gauth-code" class="form-control" placeholder="Enter 6-digit code" required>
+                        <input type="text" name="gauth_code" id="gauth-code" class="form-control" placeholder="Enter 6-digit code" inputmode="numeric" autocomplete="one-time-code" required>
                     </div>
                 </div>
 
@@ -60,6 +71,7 @@
             </form>
         </section>
     </main>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 
 </html>

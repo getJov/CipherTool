@@ -579,6 +579,59 @@ textarea.field-control {
   padding: 10px;
 }
 
+.manual-key-panel {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.manual-key-panel label {
+  color: var(--white);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.manual-key-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  gap: 8px;
+}
+
+.manual-key-row input {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--field);
+  color: var(--white);
+  padding: 0 14px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  min-width: 48px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--mint);
+  color: #101d1d;
+  cursor: pointer;
+}
+
+.icon-btn.is-copied {
+  background: var(--white);
+}
+
+.helper-text {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
 .qr-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);

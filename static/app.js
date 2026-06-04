@@ -34,3 +34,22 @@ modeRadios.forEach((radio) => {
 });
 
 updateSubmitText();
+
+document.querySelectorAll('[data-copy-target]').forEach((button) => {
+    button.addEventListener('click', async () => {
+        const target = document.getElementById(button.dataset.copyTarget);
+
+        if (!target) {
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(target.value);
+            button.classList.add('is-copied');
+            window.setTimeout(() => button.classList.remove('is-copied'), 1200);
+        } catch (error) {
+            target.select();
+            document.execCommand('copy');
+        }
+    });
+});

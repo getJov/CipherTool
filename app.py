@@ -7,6 +7,8 @@ from cachecontrol import CacheControl
 from dotenv import load_dotenv
 from psycopg.rows import dict_row
 
+import base64
+import io
 import re 
 import os
 import psycopg
@@ -64,9 +66,6 @@ flow = Flow.from_client_config(
 
 # Regular expression pattern to enforce password requirements
 password_pattern = re.compile(r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$')
-
-# key for QR/Authenticator*
-keyQR = pyotp.random_base32() # dynamic key randomly generated, base 32 (char a-Z, 2-7)
 
 # Define the cipher functions here
 def atbash_cipher(text):
@@ -284,22 +283,40 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+
+def get_or_create_totp_secret(username):
+    with get_db_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT totp_secret FROM users WHERE username = %s", (username,))
+            user = cursor.fetchone()
+
+            if not user:
+                return None
+
+            if user['totp_secret']:
+                return user['totp_secret']
+
+            totp_secret = pyotp.random_base32()
+            cursor.execute("UPDATE users SET totp_secret = %s WHERE username = %s", (totp_secret, username))
+            return totp_secret
+
+
+def make_qr_data_uri(data):
+    buffer = io.BytesIO()
+    qrcode.make(data).save(buffer, format="PNG")
+    encoded_qr = base64.b64encode(buffer.getvalue()).decode("ascii")
+    return f"data:image/png;base64,{encoded_qr}"
+
 # Google Authenticator QR
 @app.route('/gAuth')
 def gAuth():
-    if 'username' in session:
-        nameFinal = session['username']
-    elif 'name' in session:
-        nameFinal = session['name']
-    else:
-        nameFinal = "Client"
+    if 'username' not in session:
+        return redirect(url_for('cipher'))
 
-    # URL Google Authenticator
-    url = pyotp.totp.TOTP(keyQR).provisioning_uri(name=nameFinal, issuer_name="CipherTool")
-
-    # Make QR Code
-    img = qrcode.make(url)
-    img.save("static/qrcode.png")
+    totp_secret = get_or_create_totp_secret(session['username'])
+    if not totp_secret:
+        flash('Authenticator setup is unavailable for this account.', 'danger')
+        return redirect(url_for('local_login'))
 
     return redirect(url_for('verify'))
 
@@ -344,15 +361,32 @@ def makeQR():
 @login_required
 def verify():
     error_message = None  # Initialize error_message to None
+    if 'username' not in session:
+        return redirect(url_for('cipher'))
+
+    username = session['username']
+    totp_secret = get_or_create_totp_secret(username)
+    if not totp_secret:
+        flash('Authenticator setup is unavailable for this account.', 'danger')
+        return redirect(url_for('local_login'))
+
+    provisioning_uri = pyotp.totp.TOTP(totp_secret).provisioning_uri(name=username, issuer_name="CipherTool")
+    qr_data_uri = make_qr_data_uri(provisioning_uri)
+
     if request.method == 'POST':
         gauth_code = request.form.get('gauth_code')
-        totp = pyotp.TOTP(keyQR)
+        totp = pyotp.TOTP(totp_secret)
         if totp.verify(gauth_code):
             return redirect(url_for('cipher'))
         else:
             error_message = "Wrong code. Try again."
 
-    return render_template('googleAuth.html', error_message=error_message)
+    return render_template(
+        'googleAuth.html',
+        error_message=error_message,
+        qr_data_uri=qr_data_uri,
+        totp_secret=totp_secret
+    )
 
 
 # Cipher
