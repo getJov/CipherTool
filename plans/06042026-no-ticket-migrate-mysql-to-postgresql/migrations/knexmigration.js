@@ -12,10 +12,29 @@ exports.up = async function up(knex) {
       table.string('password', 255).notNullable();
       table.integer('login_attempts').notNullable().defaultTo(0);
       table.boolean('blocked').notNullable().defaultTo(false);
+      table.string('totp_secret', 64).nullable();
     });
+  } else {
+    const hasTotpSecret = await knex.schema.hasColumn('users', 'totp_secret');
+
+    if (!hasTotpSecret) {
+      await knex.schema.alterTable('users', (table) => {
+        table.string('totp_secret', 64).nullable();
+      });
+    }
   }
 };
 
 exports.down = async function down(knex) {
-  await knex.schema.dropTableIfExists('users');
+  const exists = await knex.schema.hasTable('users');
+
+  if (exists) {
+    const hasTotpSecret = await knex.schema.hasColumn('users', 'totp_secret');
+
+    if (hasTotpSecret) {
+      await knex.schema.alterTable('users', (table) => {
+        table.dropColumn('totp_secret');
+      });
+    }
+  }
 };

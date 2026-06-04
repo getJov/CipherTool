@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS users (
   username varchar(255) NOT NULL,
   password varchar(255) NOT NULL,
   login_attempts integer NOT NULL DEFAULT 0,
-  blocked boolean NOT NULL DEFAULT false
+  blocked boolean NOT NULL DEFAULT false,
+  totp_secret varchar(64)
 );
 
 -- Seed data intentionally omitted.

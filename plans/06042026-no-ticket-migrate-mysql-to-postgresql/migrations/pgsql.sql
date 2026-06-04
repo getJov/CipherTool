@@ -5,8 +5,12 @@ CREATE TABLE IF NOT EXISTS public.users (
   username varchar(255) NOT NULL,
   password varchar(255) NOT NULL,
   login_attempts integer NOT NULL DEFAULT 0,
-  blocked boolean NOT NULL DEFAULT false
+  blocked boolean NOT NULL DEFAULT false,
+  totp_secret varchar(64)
 );
+
+ALTER TABLE public.users
+ADD COLUMN IF NOT EXISTS totp_secret varchar(64);
 
 -- Seed data intentionally omitted.
 -- Do not commit real emails, password hashes, or local user records.

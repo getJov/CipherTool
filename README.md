@@ -92,3 +92,16 @@ GOOGLE_REDIRECT_URI=https://your-render-service.onrender.com/callback
 ```
 
 Run `db/web_app_db.sql` in Supabase before starting the Render service. Do not commit Supabase passwords, Render secrets, Google OAuth secrets, or local `.env` files.
+
+## Manual Supabase Database Changes
+
+Render auto-deploys from `main`, but Supabase database changes are applied manually for this project. Run database SQL in Supabase before deploying app code that depends on the new column.
+
+For the Authenticator mobile setup update, run this in Supabase SQL Editor before deploying the TOTP app-code changes:
+
+```sql
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS totp_secret varchar(64);
+```
+
+No Google OAuth client changes are required for Authenticator QR/manual setup.
