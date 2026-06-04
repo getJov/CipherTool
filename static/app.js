@@ -43,12 +43,16 @@ document.querySelectorAll('[data-copy-target]').forEach((button) => {
             return;
         }
 
+        const textToCopy = target.value || target.textContent.trim();
+
         try {
-            await navigator.clipboard.writeText(target.value);
+            await navigator.clipboard.writeText(textToCopy);
             button.classList.add('is-copied');
             window.setTimeout(() => button.classList.remove('is-copied'), 1200);
         } catch (error) {
-            target.select();
+            if (target.select) {
+                target.select();
+            }
             document.execCommand('copy');
         }
     });

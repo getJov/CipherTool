@@ -47,7 +47,7 @@
                 <div class="manual-key-panel">
                     <label for="manual-setup-key">Manual setup key</label>
                     <div class="manual-key-row">
-                        <input type="text" id="manual-setup-key" value="{{ totp_secret }}" readonly autocomplete="off">
+                        <code id="manual-setup-key" class="manual-key-value">{{ totp_secret }}</code>
                         <button type="button" class="icon-btn copy-key-btn" data-copy-target="manual-setup-key" aria-label="Copy setup key">
                             <i class="fas fa-copy" aria-hidden="true"></i>
                         </button>

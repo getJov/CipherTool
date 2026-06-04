@@ -597,17 +597,21 @@ textarea.field-control {
   gap: 8px;
 }
 
-.manual-key-row input {
+.manual-key-value {
+  display: block;
   min-width: 0;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: var(--field);
-  color: var(--white);
-  padding: 0 14px;
-  font-family: inherit;
-  font-size: 0.88rem;
+  background: rgba(255, 255, 255, 0.96);
+  color: #101d1d;
+  padding: 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.92rem;
   font-weight: 700;
   letter-spacing: 0.04em;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  user-select: all;
 }
 
 .icon-btn {
