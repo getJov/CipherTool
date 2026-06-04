@@ -1,19 +1,15 @@
--- CipherTool database migration scaffold for Microsoft SQL Server.
--- This project is targeting Supabase PostgreSQL; this file exists because the
--- planning convention requires database-change plans to include MSSQL,
--- PostgreSQL, and Knex migration artifacts.
+-- CipherTool Microsoft SQL Server equivalent migration.
+-- Runtime target remains Supabase PostgreSQL; this is maintained for plan
+-- parity only.
 
--- Schema description:
--- Table: users
--- Columns:
---   id              integer primary key, generated automatically
---   username        variable-length text, required
---   password        variable-length text, required password hash
---   login_attempts  integer, default 0
---   blocked         boolean-like flag, default false
--- Constraints:
---   primary key on id
--- Relationships:
---   none
-
--- TODO: fill during execution only if MSSQL support becomes required.
+IF OBJECT_ID(N'dbo.users', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.users (
+        id int IDENTITY(1,1) NOT NULL,
+        username varchar(255) NOT NULL,
+        password varchar(255) NOT NULL,
+        login_attempts int NOT NULL CONSTRAINT DF_users_login_attempts DEFAULT 0,
+        blocked bit NOT NULL CONSTRAINT DF_users_blocked DEFAULT 0,
+        CONSTRAINT PK_users PRIMARY KEY (id)
+    );
+END;
