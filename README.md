@@ -1,6 +1,6 @@
 # CipherTool
 
-Local Flask app for classic cipher tools with local login, Google OAuth, TOTP verification, and QR generation.
+Flask app for classic cipher tools with local login, Google OAuth, TOTP verification, QR generation, and PostgreSQL-backed user accounts.
 
 ## Local Setup
 
@@ -13,16 +13,6 @@ python -m pip install --upgrade pip
 ```
 
 ### 2. Install Python dependencies
-
-`Flask-MySQLdb` uses `mysqlclient`, which needs MySQL/MariaDB client development headers before installation.
-
-Ubuntu/Debian prerequisite:
-
-```bash
-sudo apt install mysql-server default-libmysqlclient-dev build-essential pkg-config
-```
-
-Then install the app dependencies:
 
 ```bash
 pip install -r requirements.txt
@@ -40,10 +30,8 @@ Required keys:
 
 ```text
 SECRET_KEY=replace-with-a-local-secret-key
-MYSQL_HOST=localhost
-MYSQL_USER=root
-MYSQL_PASSWORD=replace-with-your-local-db-password
-MYSQL_DB=web_app_db
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/web_app_db
+DATABASE_SSLMODE=prefer
 GOOGLE_CLIENT_ID=replace-with-google-client-id
 GOOGLE_CLIENT_SECRET=replace-with-google-client-secret
 GOOGLE_REDIRECT_URI=http://localhost:5000/callback
@@ -51,30 +39,56 @@ GOOGLE_REDIRECT_URI=http://localhost:5000/callback
 
 Do not commit `.env`.
 
-### 4. Start MySQL
+For Supabase, use the PostgreSQL connection string from the Supabase dashboard as `DATABASE_URL`. Use `DATABASE_SSLMODE=require` unless the connection string already includes an SSL mode.
+
+### 4. Create a PostgreSQL database
 
 Ubuntu/Debian:
 
 ```bash
-sudo systemctl start mysql
-mysqladmin ping
+sudo apt install postgresql
+sudo systemctl start postgresql
+createdb web_app_db
 ```
 
-If `mysqladmin ping` cannot connect, start or repair the local MySQL service before running the app.
+If you use Supabase instead of a local database, create the project in Supabase and run the schema in the SQL editor.
 
-### 5. Load the local database
-
-Importing this SQL file resets the local seeded `users` table.
+### 5. Load the database schema
 
 ```bash
-mysql -u root -p < db/web_app_db.sql
-mysql -u root -p -e "SELECT COUNT(*) FROM web_app_db.users;"
+psql "$DATABASE_URL" -f db/web_app_db.sql
+psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM users;"
 ```
 
 ### 6. Run the app
 
 ```bash
-python app.py
+python3 app.py
 ```
 
 Open `http://localhost:5000`.
+
+## Render + Supabase Deployment
+
+Deploy the PostgreSQL version from the `main` branch. Keep `mysql-version` frozen as the old MySQL baseline.
+
+Render settings:
+
+```text
+Build Command: pip install -r requirements.txt
+Start Command: gunicorn app:app
+Branch: main
+```
+
+Required Render environment variables:
+
+```text
+SECRET_KEY
+DATABASE_URL
+DATABASE_SSLMODE=require
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+GOOGLE_REDIRECT_URI=https://your-render-service.onrender.com/callback
+```
+
+Run `db/web_app_db.sql` in Supabase before starting the Render service. Do not commit Supabase passwords, Render secrets, Google OAuth secrets, or local `.env` files.
