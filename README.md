@@ -105,3 +105,5 @@ ADD COLUMN IF NOT EXISTS totp_secret varchar(64);
 ```
 
 No Google OAuth client changes are required for Authenticator QR/manual setup.
+
+The hosted app uses a per-user Authenticator setup key for local username/password accounts. The verification page shows both a QR code and a manual setup key so mobile users can enter the key directly in Google Authenticator when the QR code is displayed on the same phone.
